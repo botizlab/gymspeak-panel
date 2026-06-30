@@ -1,0 +1,129 @@
+/* ============================================================
+   GymSpeak — Panel web · tema oscuro (coherente con la app)
+   ============================================================ */
+
+:root {
+  --bg: #0a0a0b;
+  --surface: #141417;
+  --surface-2: #1b1b20;
+  --border: #26262c;
+  --text: #f2f2f5;
+  --muted: #9a9aa3;
+  --faint: #6a6a73;
+  --accent: #5ad67d;
+  --danger: #ff6b6b;
+  --radius: 16px;
+  --radius-sm: 11px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+input, button, select, textarea { font-family: inherit; font-size: 15px; }
+
+/* ─── Inputs / botones ───────────────────────────────────── */
+.input {
+  width: 100%; padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+  outline: none; transition: border-color .15s;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--faint); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: var(--radius-sm); font-weight: 700; font-size: 15px;
+  border: 1px solid transparent; cursor: pointer; transition: transform .15s, background .15s, border-color .15s, opacity .15s;
+}
+.btn:active { transform: scale(.98); }
+.btn-primary { background: var(--text); color: #0a0a0b; }
+.btn-primary:hover { opacity: .9; }
+.btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--accent); }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--border); }
+.btn-danger:hover { border-color: var(--danger); }
+.btn-sm { padding: 8px 14px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* ─── Login ──────────────────────────────────────────────── */
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.auth-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; }
+.auth-logo { font-size: 26px; font-weight: 850; letter-spacing: -1px; text-align: center; }
+.auth-logo i { color: var(--accent); font-style: normal; }
+.auth-sub { color: var(--muted); text-align: center; font-size: 14px; margin-top: 6px; margin-bottom: 24px; }
+.auth-card .field { margin-bottom: 14px; }
+.auth-card label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.auth-card .btn { width: 100%; margin-top: 6px; }
+.auth-error { color: var(--danger); font-size: 14px; margin-top: 12px; text-align: center; min-height: 18px; }
+.auth-note { color: var(--faint); font-size: 12px; text-align: center; margin-top: 18px; line-height: 1.5; }
+
+/* ─── Cabecera app ───────────────────────────────────────── */
+.topbar { position: sticky; top: 0; z-index: 20; background: rgba(10,10,11,.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.topbar-inner { max-width: 860px; margin: 0 auto; padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 18px; font-weight: 850; letter-spacing: -.5px; }
+.logo i { color: var(--accent); font-style: normal; }
+.topbar .right { display: flex; align-items: center; gap: 14px; }
+.topbar .email { color: var(--muted); font-size: 13px; }
+
+.tabs { max-width: 860px; margin: 0 auto; padding: 0 20px; display: flex; gap: 6px; border-bottom: 1px solid var(--border); }
+.tab { padding: 14px 6px; margin-right: 18px; color: var(--muted); font-weight: 700; font-size: 15px; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 26px 20px 60px; }
+
+/* ─── Encabezado de sección ──────────────────────────────── */
+.head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.head h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+
+/* ─── Tarjetas de rutina ─────────────────────────────────── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 12px; }
+.routine-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.routine-card .info { min-width: 0; }
+.routine-card h3 { font-size: 18px; font-weight: 700; }
+.routine-card .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.routine-card .actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ─── Editor de rutina ───────────────────────────────────── */
+.ex-row { display: grid; grid-template-columns: 1fr 64px 64px 80px 36px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.ex-row .input { padding: 10px 12px; }
+.ex-row .del { background: transparent; border: 1px solid var(--border); color: var(--danger); border-radius: 9px; height: 40px; cursor: pointer; }
+.ex-row .del:hover { border-color: var(--danger); }
+.ex-head { display: grid; grid-template-columns: 1fr 64px 64px 80px 36px; gap: 8px; color: var(--faint); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; padding: 0 2px; }
+.editor-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+.editor-actions .spacer { flex: 1; }
+
+/* ─── Entrenamientos ─────────────────────────────────────── */
+.day-group { margin-bottom: 26px; }
+.day-label { color: var(--faint); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.log { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 8px; }
+.log .check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: grid; place-items: center; color: var(--bg); font-size: 13px; font-weight: 800; }
+.log .check.done { background: var(--accent); border-color: var(--accent); }
+.log .info { min-width: 0; flex: 1; }
+.log .name { font-weight: 700; }
+.log .sum { color: var(--muted); font-size: 13px; }
+
+/* ─── Estados ────────────────────────────────────────────── */
+.empty { text-align: center; color: var(--muted); padding: 60px 20px; }
+.empty .big { font-size: 17px; color: var(--text); font-weight: 700; margin-bottom: 6px; }
+.loading { text-align: center; color: var(--faint); padding: 50px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 12px 20px; border-radius: 999px; font-size: 14px; font-weight: 600; z-index: 50; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+.toast.err { border-color: var(--danger); color: var(--danger); }
+
+/* ─── Modal ──────────────────────────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; padding: 24px; z-index: 40; }
+.modal { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+.modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 16px; }
+.modal .btn { width: 100%; margin-top: 10px; }
+
+@media (max-width: 560px) {
+  .ex-row, .ex-head { grid-template-columns: 1fr 50px 50px 64px 34px; }
+  .topbar .email { display: none; }
+}
