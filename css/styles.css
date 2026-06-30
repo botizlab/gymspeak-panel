@@ -99,10 +99,18 @@ input, button, select, textarea { font-family: inherit; font-size: 15px; }
 .editor-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
 .editor-actions .spacer { flex: 1; }
 
-/* ─── Entrenamientos ─────────────────────────────────────── */
-.day-group { margin-bottom: 26px; }
-.day-label { color: var(--faint); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+/* ─── Entrenamientos (días plegables) ────────────────────── */
+.day { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); margin-bottom: 10px; overflow: hidden; }
+.day-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 15px 16px; background: transparent; border: 0; color: var(--text); cursor: pointer; text-align: left; }
+.day-head:hover { background: var(--surface-2); }
+.day-name { font-weight: 700; text-transform: capitalize; }
+.day-count { color: var(--muted); font-size: 13px; flex: 1; }
+.chev { color: var(--faint); transition: transform .2s; }
+.day.open .chev { transform: rotate(180deg); }
+.day-body { display: none; padding: 0 14px 8px; }
+.day.open .day-body { display: block; }
 .log { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 8px; }
+.day-body .log { background: transparent; border: 0; border-top: 1px solid var(--border); border-radius: 0; margin: 0; }
 .log .check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: grid; place-items: center; color: var(--bg); font-size: 13px; font-weight: 800; }
 .log .check.done { background: var(--accent); border-color: var(--accent); }
 .log .info { min-width: 0; flex: 1; }

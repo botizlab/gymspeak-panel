@@ -309,12 +309,15 @@ async function renderWorkouts() {
     (groups[key] ??= []).push(l);
   }
 
-  const html = Object.keys(groups).map((day) => `
-    <div class="day-group">
-      <div class="day-label">${esc(formatDay(day))}</div>
-      ${groups[day].map((l) => {
-        const sd = parseSets(l.sets_details);
-        return `
+  // Cada día es un desplegable (colapsado salvo el más reciente) para que
+  // la página no se haga infinita.
+  const html = Object.keys(groups).map((day, idx) => {
+    const items = groups[day];
+    const done = items.filter((l) => l.completed).length;
+    const open = idx === 0;
+    const body = items.map((l) => {
+      const sd = parseSets(l.sets_details);
+      return `
         <div class="log">
           <div class="check ${l.completed ? 'done' : ''}">${l.completed ? '✓' : ''}</div>
           <div class="info">
@@ -322,10 +325,22 @@ async function renderWorkouts() {
             <div class="sum">${esc(setsSummary(sd, l.weight_unit))}</div>
           </div>
         </div>`;
-      }).join('')}
-    </div>`).join('');
+    }).join('');
+    return `
+      <div class="day ${open ? 'open' : ''}">
+        <button class="day-head" type="button">
+          <span class="day-name">${esc(formatDay(day))}</span>
+          <span class="day-count">${items.length} ${items.length === 1 ? 'ejercicio' : 'ejercicios'} · ${done} ${done === 1 ? 'hecho' : 'hechos'}</span>
+          <span class="chev">▾</span>
+        </button>
+        <div class="day-body">${body}</div>
+      </div>`;
+  }).join('');
 
   content.innerHTML = `<div class="head"><h1>Entrenamientos</h1></div>${html}`;
+  content.querySelectorAll('.day-head').forEach((b) =>
+    b.addEventListener('click', () => b.parentElement.classList.toggle('open'))
+  );
 }
 
 function setsSummary(sd, unit) {
