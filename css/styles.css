@@ -135,6 +135,27 @@ input, button, select, textarea { font-family: inherit; font-size: 15px; }
 .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 16px; }
 .modal .btn { width: 100%; margin-top: 10px; }
 
+/* ─── Calendario de entrenamientos ───────────────────────── */
+.cal { padding: 16px 18px; margin-bottom: 22px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.cal-title { font-weight: 800; font-size: 17px; text-transform: capitalize; }
+.cal-nav { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); width: 34px; height: 34px; border-radius: 9px; cursor: pointer; font-size: 18px; line-height: 1; }
+.cal-nav:hover { border-color: var(--accent); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-dow { margin-bottom: 8px; }
+.cal-dow span { text-align: center; color: var(--faint); font-size: 12px; font-weight: 700; }
+.cal-cell { position: relative; aspect-ratio: 1 / 1; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; transition: background .12s, border-color .12s; }
+.cal-cell.empty { cursor: default; }
+.cal-cell:not(.empty):hover { background: var(--surface-2); }
+.cal-cell.has { color: var(--text); }
+.cal-cell .dot { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.cal-cell.today { border-color: var(--border); }
+.cal-cell.sel { background: var(--accent); color: #0a0a0b; border-color: var(--accent); }
+.cal-cell.sel .dot { background: #0a0a0b; }
+.day-detail-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.dd-title { font-size: 19px; font-weight: 800; text-transform: capitalize; }
+.dd-meta { color: var(--muted); font-size: 13px; }
+
 /* ─── Formularios ────────────────────────────────────────── */
 .lbl { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

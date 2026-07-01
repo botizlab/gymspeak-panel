@@ -212,67 +212,132 @@ async function renderWorkouts() {
   content.innerHTML = `<div class="loading">Cargando…</div>`;
   state.logs = await loadLogs();
 
-  const groups = {};
+  // Agrupar por día (mismas referencias que state.logs)
+  const byDay = {};
   for (const l of state.logs) {
     const key = (l.logged_at || '').slice(0, 10);
-    (groups[key] ??= []).push(l);
+    (byDay[key] ??= []).push(l);
   }
+  state._byDay = byDay;
 
-  const html = Object.keys(groups).map((day, idx) => {
-    const items = groups[day];
-    const done = items.filter((l) => l.completed).length;
-    const open = idx === 0;
-    const body = items.map((l) => `
-      <div class="log" data-id="${l.id}">
-        <button class="check ${l.completed ? 'done' : ''}" data-toggle="${l.id}" title="${l.completed ? 'Hecho' : 'Pendiente'}">${l.completed ? '✓' : ''}</button>
-        <div class="info" data-open="${l.id}">
-          <div class="name">${esc(l.exercise_name ?? '')}</div>
-          <div class="sum">${esc(setsSummary(l.sets, l.weight_unit))}${l.notes ? ' · 📝' : ''}</div>
-        </div>
-        <button class="mini-btn" data-open="${l.id}">Editar</button>
-        <button class="mini-btn danger" data-del="${l.id}">✕</button>
-      </div>`).join('');
-    return `
-      <div class="day ${open ? 'open' : ''}">
-        <button class="day-head" type="button">
-          <span class="day-name">${esc(formatDay(day))}</span>
-          <span class="day-count">${items.length} ${items.length === 1 ? 'ejercicio' : 'ejercicios'} · ${done} ${done === 1 ? 'hecho' : 'hechos'}</span>
-          <span class="chev">▾</span>
-        </button>
-        <div class="day-body">${body}</div>
-      </div>`;
-  }).join('');
+  // Día y mes seleccionados (por defecto, el último día con datos)
+  if (!state.selectedDay) {
+    const latest = Object.keys(byDay).sort().pop();
+    state.selectedDay = latest || todayKey();
+  }
+  if (!state.calMonth) state.calMonth = state.selectedDay.slice(0, 7);
 
   content.innerHTML = `
     <div class="head">
       <h1>Entrenamientos</h1>
       <button class="btn btn-primary btn-sm" id="newLog">+ Añadir ejercicio</button>
     </div>
-    ${state.logs.length ? html : `<div class="empty"><div class="big">Todavía no hay entrenamientos</div>Añade uno aquí o registra en la app: aparecerá en ambos.</div>`}`;
+    <div id="calendar"></div>
+    <div id="dayDetail"></div>`;
 
-  document.getElementById('newLog').addEventListener('click', () => {
-    state.editingLog = {
-      id: null, exercise_name: '', notes: '', completed: true,
-      date: todayKey(),
-      sets: [{ id: `set_${uid()}`, reps: null, weight: null }],
-      weight_unit: state.profile?.weight_unit ?? 'kg',
-    };
-    renderWorkouts();
-  });
-  content.querySelectorAll('.day-head').forEach((b) =>
-    b.addEventListener('click', () => b.parentElement.classList.toggle('open'))
-  );
-  content.querySelectorAll('[data-toggle]').forEach((b) =>
-    b.addEventListener('click', async () => {
-      const log = state.logs.find((l) => l.id === b.dataset.toggle);
-      const { error } = await supabase.from('workout_logs').update({ completed: !log.completed }).eq('id', log.id);
-      if (error) return toast('No se pudo actualizar', true);
-      renderWorkouts();
+  document.getElementById('newLog').addEventListener('click', openNewLog);
+  renderCalendar();
+  renderDayDetail();
+}
+
+function openNewLog() {
+  state.editingLog = {
+    id: null, exercise_name: '', notes: '', completed: true,
+    date: state.selectedDay || todayKey(),
+    sets: [{ id: `set_${uid()}`, reps: null, weight: null }],
+    weight_unit: state.profile?.weight_unit ?? 'kg',
+  };
+  renderWorkouts();
+}
+
+function renderCalendar() {
+  const el = document.getElementById('calendar');
+  const [y, m] = state.calMonth.split('-').map(Number); // m: 1-12
+  const first = new Date(y, m - 1, 1);
+  const monthName = first.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const startOffset = (first.getDay() + 6) % 7; // lunes primero
+  const daysInMonth = new Date(y, m, 0).getDate();
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push('<div class="cal-cell empty"></div>');
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const has = !!state._byDay[key];
+    const isToday = key === todayKey();
+    const isSel = key === state.selectedDay;
+    cells.push(`<button class="cal-cell ${has ? 'has' : ''} ${isToday ? 'today' : ''} ${isSel ? 'sel' : ''}" data-day="${key}">
+      <span class="d">${d}</span>${has ? '<span class="dot"></span>' : ''}
+    </button>`);
+  }
+
+  el.innerHTML = `
+    <div class="cal card">
+      <div class="cal-head">
+        <button class="cal-nav" data-nav="-1" aria-label="Mes anterior">‹</button>
+        <span class="cal-title">${esc(monthName)}</span>
+        <button class="cal-nav" data-nav="1" aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="cal-grid cal-dow">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((x) => `<span>${x}</span>`).join('')}</div>
+      <div class="cal-grid">${cells.join('')}</div>
+    </div>`;
+
+  el.querySelectorAll('[data-nav]').forEach((b) =>
+    b.addEventListener('click', () => {
+      let [yy, mm] = state.calMonth.split('-').map(Number);
+      mm += +b.dataset.nav;
+      if (mm < 1) { mm = 12; yy--; }
+      if (mm > 12) { mm = 1; yy++; }
+      state.calMonth = `${yy}-${String(mm).padStart(2, '0')}`;
+      renderCalendar();
     })
   );
-  content.querySelectorAll('[data-open]').forEach((el) =>
-    el.addEventListener('click', () => {
-      const l = state.logs.find((x) => x.id === el.dataset.open);
+  el.querySelectorAll('[data-day]').forEach((b) =>
+    b.addEventListener('click', () => {
+      state.selectedDay = b.dataset.day;
+      renderCalendar();
+      renderDayDetail();
+    })
+  );
+}
+
+function renderDayDetail() {
+  const el = document.getElementById('dayDetail');
+  const logs = state._byDay[state.selectedDay] || [];
+  const done = logs.filter((l) => l.completed).length;
+
+  const rows = logs.map((l) => `
+    <div class="log">
+      <button class="check ${l.completed ? 'done' : ''}" data-toggle="${l.id}" title="${l.completed ? 'Hecho' : 'Pendiente'}">${l.completed ? '✓' : ''}</button>
+      <div class="info" data-open="${l.id}">
+        <div class="name">${esc(l.exercise_name ?? '')}</div>
+        <div class="sum">${esc(setsSummary(l.sets, l.weight_unit))}${l.notes ? ' · 📝' : ''}</div>
+      </div>
+      <button class="mini-btn" data-open="${l.id}">Editar</button>
+      <button class="mini-btn danger" data-del="${l.id}">✕</button>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="day-detail-head">
+      <span class="dd-title">${esc(formatDay(state.selectedDay))}</span>
+      ${logs.length ? `<span class="dd-meta">${logs.length} ${logs.length === 1 ? 'ejercicio' : 'ejercicios'} · ${done} ${done === 1 ? 'hecho' : 'hechos'}</span>` : ''}
+    </div>
+    ${logs.length ? rows : `<div class="empty" style="padding:40px 20px">No hay ejercicios este día.<br/><button class="btn btn-ghost btn-sm" id="addHere" style="margin-top:14px">+ Añadir uno</button></div>`}`;
+
+  const addHere = document.getElementById('addHere');
+  if (addHere) addHere.addEventListener('click', openNewLog);
+
+  el.querySelectorAll('[data-toggle]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const log = (state._byDay[state.selectedDay] || []).find((l) => l.id === b.dataset.toggle);
+      const { error } = await supabase.from('workout_logs').update({ completed: !log.completed }).eq('id', log.id);
+      if (error) return toast('No se pudo actualizar', true);
+      log.completed = !log.completed; // misma referencia que state.logs
+      renderDayDetail();
+    })
+  );
+  el.querySelectorAll('[data-open]').forEach((elm) =>
+    elm.addEventListener('click', () => {
+      const l = state.logs.find((x) => x.id === elm.dataset.open);
       state.editingLog = {
         id: l.id, exercise_name: l.exercise_name ?? '', notes: l.notes ?? '',
         completed: !!l.completed, date: (l.logged_at || '').slice(0, 10),
@@ -282,7 +347,7 @@ async function renderWorkouts() {
       renderWorkouts();
     })
   );
-  content.querySelectorAll('[data-del]').forEach((b) =>
+  el.querySelectorAll('[data-del]').forEach((b) =>
     b.addEventListener('click', async () => {
       if (!confirm('¿Borrar este ejercicio del historial?')) return;
       const { error } = await supabase.from('workout_logs').delete().eq('id', b.dataset.del);
