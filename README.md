@@ -7,11 +7,21 @@ Sitio estático (HTML/CSS/JS, sin build) → GitHub Pages. Usa `@supabase/supaba
 desde CDN (esm.sh). Solo la clave **anon** pública; la seguridad la da el **RLS**
 de Supabase (cada usuario solo ve y edita lo suyo).
 
-## Funciones (MVP)
-- **Login** con la misma cuenta de la app (email + contraseña).
-- **Rutinas**: ver, crear, editar (nombre + ejercicios con series/reps/peso) y borrar.
+## Funciones
+- **Login** con la misma cuenta de la app (email + contraseña) o **Google**.
+- **Entrenamientos**: crear, editar (series/reps/peso, notas, fecha), borrar y
+  marcar hecho/pendiente. Días plegables.
+- **Rutinas**: crear, editar, borrar, **programar días de la semana** (se
+  auto-aplican en la app) y **aplicar a una fecha** (crea los logs del día).
   - Guardar usa la RPC `replace_routine_exercises` (reemplazo atómico, igual que la app).
-- **Entrenamientos**: lista de los últimos registros, agrupados por día.
+- **Progreso**: selector de ejercicio + gráfica SVG (mejor serie por día),
+  mejor marca, mejor 1RM estimado (Epley) y días entrenados.
+- **Amigos**: clasificación por fuerza (tiers Bronce→Maestro), solicitudes
+  (aceptar/rechazar), lista con eliminar, y búsqueda incremental por prefijo
+  (misma RPC que la app) con enviar solicitud.
+- **Perfil**: nombre, usuario (con comprobación de disponibilidad), bio, emoji,
+  unidad de peso y calendario público. (Peso corporal/sexo/objetivo viven solo
+  en la app; la web no los toca.)
 
 ## Publicar (GitHub Pages)
 Repo `botizlab/gymspeak-panel` → URL `https://botizlab.github.io/gymspeak-panel/`.

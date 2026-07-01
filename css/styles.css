@@ -135,7 +135,63 @@ input, button, select, textarea { font-family: inherit; font-size: 15px; }
 .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 16px; }
 .modal .btn { width: 100%; margin-top: 10px; }
 
+/* ─── Formularios ────────────────────────────────────────── */
+.lbl { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.check-row { display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 15px; cursor: pointer; }
+.check-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+textarea.input { resize: vertical; }
+.select { max-width: 420px; margin-bottom: 16px; }
+
+/* Editor de series de un log */
+.ex-row.sets3 { grid-template-columns: 70px 1fr 1fr 36px; }
+.setn { color: var(--faint); font-size: 13px; font-weight: 600; }
+
+/* Botones pequeños en filas */
+.mini-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+.mini-btn:hover { color: var(--text); border-color: var(--accent); }
+.mini-btn.danger { color: var(--danger); }
+.mini-btn.danger:hover { border-color: var(--danger); }
+.log .check { cursor: pointer; background: transparent; }
+.log .info { cursor: pointer; }
+
+/* Chips de días / emojis */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip-day { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); font-weight: 800; font-size: 14px; cursor: pointer; transition: all .15s; }
+.chip-day:hover { border-color: var(--accent); }
+.chip-day.on { background: var(--accent); border-color: var(--accent); color: #0a0a0b; }
+.chip-day.emoji { font-size: 19px; }
+.chip-day.emoji.on { background: var(--surface-2); border-color: var(--accent); box-shadow: 0 0 0 2px rgba(90,214,125,.3); }
+
+/* Progreso */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; }
+.stat .n { font-size: 22px; font-weight: 800; color: var(--accent); }
+.stat .l { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.chart-card { padding: 18px; }
+
+/* Amigos */
+.subhead { color: var(--faint); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin: 24px 0 10px; }
+.searchbar { margin-bottom: 12px; }
+.friend-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.friend-row .info { flex: 1; min-width: 0; }
+.friend-row .name { font-weight: 700; }
+.friend-row .sum { color: var(--muted); font-size: 13px; }
+.avatar { border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+.avatar-emoji { display: inline-grid; place-items: center; }
+.lb-row { display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-bottom: 1px solid var(--border); }
+.lb-row:last-child { border-bottom: 0; }
+.lb-row.me { background: rgba(90,214,125,.06); border-radius: 8px; padding-left: 10px; padding-right: 10px; }
+.lb-row .pos { width: 22px; text-align: center; font-weight: 800; color: var(--muted); }
+.lb-row .lb-name { flex: 1; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-row .lb-tier { font-size: 13px; font-weight: 700; }
+
 @media (max-width: 560px) {
   .ex-row, .ex-head { grid-template-columns: 1fr 50px 50px 64px 34px; }
+  .ex-row.sets3 { grid-template-columns: 56px 1fr 1fr 34px; }
   .topbar .email { display: none; }
+  .form-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr; }
+  .tabs { overflow-x: auto; }
+  .tab { white-space: nowrap; }
 }
