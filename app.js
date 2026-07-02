@@ -565,9 +565,16 @@ async function applyRoutinePrompt(routineId) {
   if (!r) return;
   if (!r.items.length) return toast('Esta rutina no tiene ejercicios', true);
 
-  const date = prompt(`Aplicar "${r.name}" al día (AAAA-MM-DD):`, todayKey());
+  const date = (prompt(`Aplicar "${r.name}" al día (AAAA-MM-DD):`, todayKey()) || '').trim();
   if (!date) return;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return toast('Fecha no válida', true);
+  // El regex no basta: "2026-13-40" lo pasa pero no es una fecha real. Validar
+  // que los componentes cuadren (JS "desborda" meses/días inválidos al parsear).
+  const [yy, mm, dd] = date.split('-').map(Number);
+  const parsed = new Date(yy, mm - 1, dd);
+  if (parsed.getFullYear() !== yy || parsed.getMonth() !== mm - 1 || parsed.getDate() !== dd) {
+    return toast('Fecha no válida', true);
+  }
 
   const iso = date === todayKey() ? new Date().toISOString() : new Date(date + 'T12:00:00').toISOString();
   const rows = r.items.map((item, i) => {
