@@ -329,6 +329,10 @@ function renderDayDetail() {
   el.querySelectorAll('[data-toggle]').forEach((b) =>
     b.addEventListener('click', async () => {
       const log = (state._byDay[state.selectedDay] || []).find((l) => l.id === b.dataset.toggle);
+      // Un día futuro se puede planificar, pero no marcar hecho hasta que llegue.
+      if (!log.completed && state.selectedDay > todayKey()) {
+        return toast('Aún no ha llegado ese día', true);
+      }
       const { error } = await supabase.from('workout_logs').update({ completed: !log.completed }).eq('id', log.id);
       if (error) return toast('No se pudo actualizar', true);
       log.completed = !log.completed; // misma referencia que state.logs
@@ -450,6 +454,9 @@ function renderLogEditor() {
     if (!isNew && l.date === (l.logged_at || '').slice(0, 10)) loggedAt = l.logged_at;
     else if (l.date === todayKey()) loggedAt = new Date().toISOString();
     else loggedAt = new Date(l.date + 'T12:00:00').toISOString();
+
+    // Un día futuro se puede planificar, pero nunca guardar como hecho.
+    if (l.date > todayKey()) l.completed = false;
 
     const btn = document.getElementById('saveLog');
     btn.disabled = true; btn.textContent = 'Guardando…';
