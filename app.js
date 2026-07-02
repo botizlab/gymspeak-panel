@@ -80,13 +80,76 @@ let state = {
   progressExercise: null,
 };
 
+// ─── Navegación por hash (recordar pestaña, botón atrás del navegador) ──
+const TAB_TITLES = { workouts: 'Entrenamientos', routines: 'Rutinas', progress: 'Progreso', friends: 'Amigos', profile: 'Perfil' };
+function getTabFromHash() {
+  const h = (location.hash || '').replace(/^#\/?/, '');
+  return TAB_TITLES[h] ? h : 'workouts';
+}
+
+// ─── Sesión caducada → volver al login (en vez de "Error" genérico) ──
+async function handleMaybeAuthError(error) {
+  const m = `${error?.message ?? ''} ${error?.code ?? ''}`;
+  if (/jwt|token|expired|not authenticated|refresh|PGRST301|invalid claim|401/i.test(m)) {
+    toast('Tu sesión ha caducado, vuelve a entrar', true);
+    await supabase.auth.signOut();
+    return true;
+  }
+  return false;
+}
+
+// ─── Modal reutilizable (reemplaza a prompt()/confirm() nativos) ──
+function openModal(title, bodyHtml, onConfirm, confirmLabel = 'Guardar') {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>${title}</h3>
+      <div class="modal-body">${bodyHtml}</div>
+      <button class="btn btn-primary" data-ok>${esc(confirmLabel)}</button>
+      <button class="btn btn-ghost" data-cancel>Cancelar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+    else if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); overlay.querySelector('[data-ok]').click(); }
+  };
+  document.addEventListener('keydown', onKey);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector('[data-cancel]').addEventListener('click', close);
+  overlay.querySelector('[data-ok]').addEventListener('click', () => onConfirm(close));
+  setTimeout(() => overlay.querySelector('input,textarea,select')?.focus(), 30);
+  return close;
+}
+
+// ─── Autocompletado de ejercicios (nombres que el usuario ya usó) ──
+function collectExerciseNames() {
+  const set = new Set();
+  for (const l of state.logs) { const n = (l.exercise_name || '').trim(); if (n) set.add(n); }
+  for (const r of state.routines) for (const it of (r.items || [])) { const n = (it.exerciseName || '').trim(); if (n) set.add(n); }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+function exListHtml() {
+  return `<datalist id="exList">${collectExerciseNames().map((n) => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
+}
+
 // ─── Arranque ─────────────────────────────────────────────
 (async function init() {
+  state.tab = getTabFromHash();
   const { data } = await supabase.auth.getSession();
   if (data.session) renderApp(); else renderLogin();
   supabase.auth.onAuthStateChange((_e, session) => {
     if (session) { if (!document.querySelector('.topbar')) renderApp(); }
     else renderLogin();
+  });
+  // Botón atrás/adelante del navegador y recarga: mantener la pestaña.
+  window.addEventListener('hashchange', () => {
+    const t = getTabFromHash();
+    if (t !== state.tab && document.querySelector('.topbar')) {
+      state.tab = t; state.editingLog = null; state.editingRoutine = null;
+      renderApp();
+    }
   });
 })();
 
@@ -149,18 +212,13 @@ function renderLogin() {
 }
 
 // ─── Shell (cabecera + tabs) ─────────────────────────────
-const TABS = [
-  ['workouts', 'Entrenamientos'],
-  ['routines', 'Rutinas'],
-  ['progress', 'Progreso'],
-  ['friends', 'Amigos'],
-  ['profile', 'Perfil'],
-];
+const TABS = Object.entries(TAB_TITLES);
 
 async function renderApp() {
   const { data } = await supabase.auth.getUser();
   if (!data?.user) return renderLogin();
   state.me = { id: data.user.id, email: data.user.email ?? '' };
+  document.title = `GymSpeak · ${TAB_TITLES[state.tab] ?? 'Panel'}`;
 
   view.innerHTML = `
     <div class="topbar">
@@ -180,9 +238,10 @@ async function renderApp() {
   document.getElementById('logoutBtn').addEventListener('click', () => supabase.auth.signOut());
   view.querySelectorAll('.tab').forEach((t) =>
     t.addEventListener('click', () => {
-      state.tab = t.dataset.tab;
-      state.editingLog = null; state.editingRoutine = null;
-      renderApp();
+      if (t.dataset.tab === state.tab) return;
+      // Cambiar el hash dispara el render (listener de hashchange); así el
+      // botón "atrás" del navegador y la recarga recuerdan la pestaña.
+      location.hash = t.dataset.tab;
     })
   );
 
@@ -201,7 +260,7 @@ async function loadLogs(limit = 400) {
     .eq('user_id', state.me.id)
     .order('logged_at', { ascending: false })
     .limit(limit);
-  if (error) { toast('Error al cargar entrenamientos', true); return []; }
+  if (error) { if (!(await handleMaybeAuthError(error))) toast('Error al cargar entrenamientos', true); return []; }
   return (data ?? []).map((l) => ({ ...l, sets: parseSets(l.sets_details) }));
 }
 
@@ -393,8 +452,8 @@ function renderLogEditor() {
       <div class="form-grid">
         <div>
           <label class="lbl">Ejercicio</label>
-          <input class="input" id="exName" placeholder="Ej. Press de banca" value="${esc(l.exercise_name)}" />
-        </div>
+          <input class="input" id="exName" list="exList" autocomplete="off" placeholder="Ej. Press de banca" value="${esc(l.exercise_name)}" />
+        </div>${exListHtml()}
         <div>
           <label class="lbl">Fecha</label>
           <input class="input" type="date" id="exDate" value="${esc(l.date)}" max="${todayKey()}" />
@@ -504,7 +563,7 @@ async function loadRoutines() {
     .select('id, name, muscle_group, scheduled_days, created_at, routine_items(id, exercise_name, sets, reps, weight, weight_unit, duration, distance, sets_details, position, notes)')
     .eq('user_id', state.me.id)
     .order('created_at', { ascending: false });
-  if (error) { toast('Error al cargar rutinas', true); return []; }
+  if (error) { if (!(await handleMaybeAuthError(error))) toast('Error al cargar rutinas', true); return []; }
   return (data ?? []).map((r) => ({
     id: r.id, name: r.name, muscleGroup: r.muscle_group,
     scheduledDays: r.scheduled_days ?? [],
@@ -522,6 +581,8 @@ async function renderRoutines() {
 
   content.innerHTML = `<div class="loading">Cargando rutinas…</div>`;
   state.routines = await loadRoutines();
+  // Sembrar nombres de ejercicios para el autocompletado (sin bloquear).
+  if (!state.logs.length) loadLogs().then((l) => { state.logs = l; }).catch(() => {});
 
   const list = state.routines.map((r) => {
     const days = DAY_ORDER.filter((d) => r.scheduledDays.includes(d)).map((d) => DAY_LETTER[d]).join(' ');
@@ -560,22 +621,25 @@ async function renderRoutines() {
   );
 }
 
-async function applyRoutinePrompt(routineId) {
+function applyRoutinePrompt(routineId) {
   const r = state.routines.find((x) => x.id === routineId);
   if (!r) return;
   if (!r.items.length) return toast('Esta rutina no tiene ejercicios', true);
 
-  const date = (prompt(`Aplicar "${r.name}" al día (AAAA-MM-DD):`, todayKey()) || '').trim();
-  if (!date) return;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return toast('Fecha no válida', true);
-  // El regex no basta: "2026-13-40" lo pasa pero no es una fecha real. Validar
-  // que los componentes cuadren (JS "desborda" meses/días inválidos al parsear).
-  const [yy, mm, dd] = date.split('-').map(Number);
-  const parsed = new Date(yy, mm - 1, dd);
-  if (parsed.getFullYear() !== yy || parsed.getMonth() !== mm - 1 || parsed.getDate() !== dd) {
-    return toast('Fecha no válida', true);
-  }
+  openModal(`Aplicar "${esc(r.name)}"`, `
+    <label class="lbl">¿A qué día lo aplicamos?</label>
+    <input class="input" type="date" id="applyDate" value="${todayKey()}" />
+    <p class="modal-hint">Se añadirán ${r.items.length} ${r.items.length === 1 ? 'ejercicio' : 'ejercicios'} a ese día (sin marcar como hechos).</p>
+  `, async (close) => {
+    const date = document.getElementById('applyDate').value;
+    if (!date) return toast('Elige una fecha', true);
+    await applyRoutineToDate(r, date);
+    close();
+    if (state.tab === 'workouts') { state.selectedDay = date; renderWorkouts(); }
+  }, 'Aplicar');
+}
 
+async function applyRoutineToDate(r, date) {
   const iso = date === todayKey() ? new Date().toISOString() : new Date(date + 'T12:00:00').toISOString();
   const rows = r.items.map((item, i) => {
     const sd = (item.setsDetails && item.setsDetails.length)
@@ -596,7 +660,7 @@ async function applyRoutinePrompt(routineId) {
     };
   });
   const { error } = await supabase.from('workout_logs').insert(rows);
-  if (error) return toast('No se pudo aplicar', true);
+  if (error) { if (!(await handleMaybeAuthError(error))) toast('No se pudo aplicar', true); return; }
   toast(`Rutina aplicada a ${date === todayKey() ? 'hoy' : date}`);
 }
 
@@ -607,7 +671,7 @@ function renderRoutineEditor() {
 
   const rows = r.items.map((it, i) => `
     <div class="ex-row" data-i="${i}">
-      <input class="input" data-f="exerciseName" placeholder="Ejercicio" value="${esc(it.exerciseName ?? '')}" />
+      <input class="input" data-f="exerciseName" list="exList" autocomplete="off" placeholder="Ejercicio" value="${esc(it.exerciseName ?? '')}" />
       <input class="input" data-f="sets" inputmode="numeric" placeholder="Series" value="${it.sets ?? ''}" />
       <input class="input" data-f="reps" inputmode="numeric" placeholder="Reps" value="${it.reps ?? ''}" />
       <input class="input" data-f="weight" inputmode="decimal" placeholder="Peso" value="${it.weight ?? ''}" />
@@ -631,7 +695,7 @@ function renderRoutineEditor() {
       <div class="ex-head"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Peso</span><span></span></div>
       <div id="exRows">${rows}</div>
       <button class="btn btn-ghost btn-sm" id="addEx" style="margin-top:6px">+ Añadir ejercicio</button>
-    </div>
+    </div>${exListHtml()}
     <div class="editor-actions">
       <button class="btn btn-primary" id="saveRoutine">Guardar</button>
       <button class="btn btn-ghost" id="cancelEdit">Cancelar</button>

@@ -134,6 +134,7 @@ input, button, select, textarea { font-family: inherit; font-size: 15px; }
 .modal { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
 .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 16px; }
 .modal .btn { width: 100%; margin-top: 10px; }
+.modal-hint { color: var(--muted); font-size: 13px; margin-top: 12px; line-height: 1.5; }
 
 /* ─── Calendario de entrenamientos ───────────────────────── */
 .cal { padding: 16px 18px; margin-bottom: 22px; }
