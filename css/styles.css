@@ -217,3 +217,25 @@ textarea.input { resize: vertical; }
   .tabs { overflow-x: auto; }
   .tab { white-space: nowrap; }
 }
+
+/* ─── Logros ─────────────────────────────────────────────── */
+.ach-summary { display: flex; align-items: center; gap: 16px; padding: 18px 20px; margin-bottom: 18px; }
+.ach-summary-icon { width: 52px; height: 52px; border-radius: 50%; background: rgba(90,214,125,.15); color: var(--accent); display: grid; place-items: center; }
+.ach-summary-icon svg { width: 26px; height: 26px; }
+.ach-count { font-size: 24px; font-weight: 800; }
+.ach-count span { color: var(--faint); font-weight: 600; }
+.ach-label { color: var(--muted); font-size: 13px; }
+.ach-bar { height: 6px; border-radius: 3px; background: var(--surface-2); margin-top: 8px; overflow: hidden; }
+.ach-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.ach-medal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 14px; text-align: center; }
+.ach-medal.on { border-color: var(--accent); box-shadow: 0 0 18px rgba(90,214,125,.18); }
+.ach-icon { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px; display: grid; place-items: center; background: var(--surface-2); color: var(--faint); }
+.ach-medal.on .ach-icon { background: var(--accent); color: #0a0a0b; }
+.ach-icon svg { width: 20px; height: 20px; }
+.ach-name { font-weight: 700; font-size: 14px; }
+.ach-desc { color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; min-height: 30px; }
+.ach-done { color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px; }
+.ach-mini { height: 5px; border-radius: 3px; background: var(--surface-2); margin-top: 10px; overflow: hidden; }
+.ach-minifill { height: 100%; background: rgba(90,214,125,.6); border-radius: 3px; }
+.ach-nums { color: var(--faint); font-size: 10px; font-weight: 600; margin-top: 4px; }

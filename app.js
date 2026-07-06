@@ -81,7 +81,7 @@ let state = {
 };
 
 // ─── Navegación por hash (recordar pestaña, botón atrás del navegador) ──
-const TAB_TITLES = { workouts: 'Entrenamientos', routines: 'Rutinas', progress: 'Progreso', friends: 'Amigos', profile: 'Perfil' };
+const TAB_TITLES = { workouts: 'Entrenamientos', routines: 'Rutinas', progress: 'Progreso', achievements: 'Logros', friends: 'Amigos', profile: 'Perfil' };
 function getTabFromHash() {
   const h = (location.hash || '').replace(/^#\/?/, '');
   return TAB_TITLES[h] ? h : 'workouts';
@@ -245,7 +245,7 @@ async function renderApp() {
     })
   );
 
-  const r = { workouts: renderWorkouts, routines: renderRoutines, progress: renderProgress, friends: renderFriends, profile: renderProfile }[state.tab];
+  const r = { workouts: renderWorkouts, routines: renderRoutines, progress: renderProgress, achievements: renderAchievements, friends: renderFriends, profile: renderProfile }[state.tab];
   r();
 }
 
@@ -869,6 +869,152 @@ function chartSvg(points) {
       <path d="${path}" fill="none" stroke="#5ad67d" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
       ${dots}
     </svg>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOGROS — port del motor de la app (lib/achievements.ts).
+// Se calculan sobre los últimos 400 registros cargados del
+// servidor; suficiente para la vitrina (misma lógica que la app).
+// ═══════════════════════════════════════════════════════════
+
+const ACH_KG_PER_LB = 0.45359237;
+const ACH_DEFS = [
+  { id: 'first',        name: 'Primer paso',            desc: 'Tu primer entrenamiento registrado',    target: 1,      stat: 'totalWorkouts' },
+  { id: 'ten',          name: 'Cogiendo ritmo',         desc: '10 entrenamientos completados',         target: 10,     stat: 'totalWorkouts' },
+  { id: 'fifty',        name: 'Habitual del hierro',    desc: '50 entrenamientos completados',         target: 50,     stat: 'totalWorkouts' },
+  { id: 'hundred',      name: 'Centurión',              desc: '100 entrenamientos completados',        target: 100,    stat: 'totalWorkouts' },
+  { id: 'week',         name: 'Primera semana',         desc: '7 días distintos entrenados',           target: 7,      stat: 'distinctDays' },
+  { id: 'month',        name: 'Mes de hierro',          desc: '30 días distintos entrenados',          target: 30,     stat: 'distinctDays' },
+  { id: 'streak4',      name: 'Constancia',             desc: '4 semanas seguidas entrenando',         target: 4,      stat: 'weekStreak' },
+  { id: 'streak12',     name: 'Imparable',              desc: '12 semanas seguidas entrenando',        target: 12,     stat: 'weekStreak' },
+  { id: 'ton',          name: 'La primera tonelada',    desc: '1.000 kg de volumen acumulado',         target: 1000,   stat: 'totalVolumeKg' },
+  { id: 'tenTons',      name: 'Como un camión',         desc: '10.000 kg de volumen acumulado',        target: 10000,  stat: 'totalVolumeKg' },
+  { id: 'hundredTons',  name: 'Fuerza industrial',      desc: '100.000 kg de volumen acumulado',       target: 100000, stat: 'totalVolumeKg' },
+  { id: 'beastDay',     name: 'Día bestia',             desc: '10.000 kg de volumen en un solo día',   target: 10000,  stat: 'bestDayVolumeKg' },
+  { id: 'club100',      name: 'Club de los 100',        desc: 'Una serie con 100 kg o más',            target: 100,    stat: 'bestSetWeightKg' },
+  { id: 'explorer',     name: 'Explorador',             desc: '10 ejercicios distintos probados',      target: 10,     stat: 'distinctExercises' },
+  { id: 'encyclopedia', name: 'Enciclopedia',           desc: '25 ejercicios distintos probados',      target: 25,     stat: 'distinctExercises' },
+  { id: 'methodical',   name: 'Metódico',               desc: '5 registros con notas',                 target: 5,      stat: 'logsWithNotes' },
+  { id: 'setMarathon',  name: 'Maratón de series',      desc: '20 series completadas en un día',       target: 20,     stat: 'bestDaySets' },
+  { id: 'earlyBird',    name: 'Madrugador',             desc: 'Entrenar antes de las 8:00',            target: 1,      stat: 'earlyBird' },
+  { id: 'nightOwl',     name: 'Búho de gimnasio',       desc: 'Entrenar después de las 22:00',         target: 1,      stat: 'nightOwl' },
+  { id: 'weekend',      name: 'Guerrero del finde',     desc: 'Sábado y domingo de la misma semana',   target: 1,      stat: 'weekendWarrior' },
+  { id: 'cardio',       name: 'El cardio también cuenta', desc: 'Un ejercicio de tiempo o distancia',  target: 1,      stat: 'cardioLogs' },
+  { id: 'fullDay',      name: 'Pleno',                  desc: 'Un día con 5+ ejercicios, todos hechos', target: 1,     stat: 'fullDay' },
+];
+
+function achDayKey(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function achWeekKey(d) {
+  const m = new Date(d); m.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return achDayKey(m.toISOString());
+}
+
+function achAggregate(logs) {
+  const done = logs.filter(l => l.completed);
+  const days = new Set(), exercises = new Set(), weeks = new Set();
+  const volumeByDay = new Map(), setsByDay = new Map(), logsByDay = new Map(), weekend = new Map();
+  let totalVolume = 0, bestSet = 0, notes = 0, early = 0, night = 0, cardio = 0;
+
+  for (const log of done) {
+    const day = achDayKey(log.logged_at);
+    days.add(day);
+    exercises.add((log.exercise_name || '').trim().toLowerCase());
+    if (log.notes && log.notes.trim()) notes++;
+    const d = new Date(log.logged_at);
+    weeks.add(achWeekKey(d));
+    if (d.getHours() < 8) early = 1;
+    if (d.getHours() >= 22) night = 1;
+    if (d.getDay() === 6 || d.getDay() === 0) {
+      const wk = achWeekKey(d), w = weekend.get(wk) ?? { sat: false, sun: false };
+      if (d.getDay() === 6) w.sat = true; else w.sun = true;
+      weekend.set(wk, w);
+    }
+    let hasCardio = false;
+    for (const s of (log.sets || [])) {
+      if (s.reps != null && s.weight != null) {
+        const kg = (log.weight_unit === 'lb') ? s.weight * ACH_KG_PER_LB : s.weight;
+        totalVolume += s.reps * kg;
+        volumeByDay.set(day, (volumeByDay.get(day) ?? 0) + s.reps * kg);
+        if (kg > bestSet) bestSet = kg;
+      }
+      if (s.time != null || s.distance != null) hasCardio = true;
+      setsByDay.set(day, (setsByDay.get(day) ?? 0) + 1);
+    }
+    if (hasCardio || log.duration != null) cardio++;
+  }
+
+  for (const log of logs) {
+    const day = achDayKey(log.logged_at);
+    const rec = logsByDay.get(day) ?? { total: 0, completed: 0 };
+    rec.total++; if (log.completed) rec.completed++;
+    logsByDay.set(day, rec);
+  }
+  let fullDay = 0;
+  for (const rec of logsByDay.values()) if (rec.total >= 5 && rec.completed === rec.total) { fullDay = 1; break; }
+  let ww = 0;
+  for (const w of weekend.values()) if (w.sat && w.sun) { ww = 1; break; }
+
+  // Racha de semanas: mejor tira de semanas consecutivas con entreno
+  const sorted = [...weeks].sort();
+  let weekStreak = 0, run = 0, prev = null;
+  for (const wk of sorted) {
+    if (prev && (new Date(wk) - new Date(prev)) === 7 * 86400000) run++;
+    else run = 1;
+    weekStreak = Math.max(weekStreak, run);
+    prev = wk;
+  }
+
+  return {
+    totalWorkouts: done.length, distinctDays: days.size, weekStreak,
+    totalVolumeKg: Math.round(totalVolume),
+    bestDayVolumeKg: Math.round(Math.max(0, ...volumeByDay.values())),
+    bestSetWeightKg: Math.round(bestSet * 10) / 10,
+    distinctExercises: exercises.size, logsWithNotes: notes,
+    bestDaySets: Math.max(0, ...setsByDay.values()),
+    earlyBird: early, nightOwl: night, weekendWarrior: ww, cardioLogs: cardio, fullDay,
+  };
+}
+
+const SVG_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+const SVG_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+
+async function renderAchievements() {
+  const content = document.getElementById('content');
+  content.innerHTML = `<div class="loading">Calculando logros…</div>`;
+  if (!state.logs.length) state.logs = await loadLogs();
+
+  const stats = achAggregate(state.logs);
+  const results = ACH_DEFS.map(d => {
+    const current = stats[d.stat];
+    return { ...d, current, progress: Math.min(1, current / d.target), unlocked: current >= d.target };
+  });
+  const unlocked = results.filter(r => r.unlocked).length;
+
+  content.innerHTML = `
+    <div class="head"><h1>Logros</h1></div>
+    <div class="card ach-summary">
+      <div class="ach-summary-icon">${SVG_CHECK}</div>
+      <div style="flex:1">
+        <div class="ach-count">${unlocked} <span>/ ${results.length}</span></div>
+        <div class="ach-label">medallas desbloqueadas</div>
+        <div class="ach-bar"><div class="ach-fill" style="width:${Math.round((unlocked / results.length) * 100)}%"></div></div>
+      </div>
+    </div>
+    <div class="ach-grid">
+      ${results.map(a => `
+        <div class="ach-medal ${a.unlocked ? 'on' : ''}">
+          <div class="ach-icon">${a.unlocked ? SVG_CHECK : SVG_LOCK}</div>
+          <div class="ach-name">${esc(a.name)}</div>
+          <div class="ach-desc">${esc(a.desc)}</div>
+          ${a.unlocked
+            ? '<div class="ach-done">Conseguido</div>'
+            : `<div class="ach-mini"><div class="ach-minifill" style="width:${Math.round(a.progress * 100)}%"></div></div>
+               <div class="ach-nums">${a.current.toLocaleString('es-ES')} / ${a.target.toLocaleString('es-ES')}</div>`}
+        </div>`).join('')}
+    </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════
