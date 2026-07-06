@@ -239,3 +239,6 @@ textarea.input { resize: vertical; }
 .ach-mini { height: 5px; border-radius: 3px; background: var(--surface-2); margin-top: 10px; overflow: hidden; }
 .ach-minifill { height: 100%; background: rgba(90,214,125,.6); border-radius: 3px; }
 .ach-nums { color: var(--faint); font-size: 10px; font-weight: 600; margin-top: 4px; }
+.ach-medal { position: relative; }
+.ach-level { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #0a0a0b; font-size: 10px; font-weight: 800; padding: 2px 9px; border-radius: 9px; letter-spacing: .4px; white-space: nowrap; }
+.ach-level.gold { background: #f5c542; }

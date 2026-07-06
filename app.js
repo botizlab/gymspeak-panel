@@ -878,29 +878,22 @@ function chartSvg(points) {
 // ═══════════════════════════════════════════════════════════
 
 const ACH_KG_PER_LB = 0.45359237;
+// v2: un logro por concepto con NIVELES escalables (nivel 1 = levels[0]).
 const ACH_DEFS = [
-  { id: 'first',        name: 'Primer paso',            desc: 'Tu primer entrenamiento registrado',    target: 1,      stat: 'totalWorkouts' },
-  { id: 'ten',          name: 'Cogiendo ritmo',         desc: '10 entrenamientos completados',         target: 10,     stat: 'totalWorkouts' },
-  { id: 'fifty',        name: 'Habitual del hierro',    desc: '50 entrenamientos completados',         target: 50,     stat: 'totalWorkouts' },
-  { id: 'hundred',      name: 'Centurión',              desc: '100 entrenamientos completados',        target: 100,    stat: 'totalWorkouts' },
-  { id: 'week',         name: 'Primera semana',         desc: '7 días distintos entrenados',           target: 7,      stat: 'distinctDays' },
-  { id: 'month',        name: 'Mes de hierro',          desc: '30 días distintos entrenados',          target: 30,     stat: 'distinctDays' },
-  { id: 'streak4',      name: 'Constancia',             desc: '4 semanas seguidas entrenando',         target: 4,      stat: 'weekStreak' },
-  { id: 'streak12',     name: 'Imparable',              desc: '12 semanas seguidas entrenando',        target: 12,     stat: 'weekStreak' },
-  { id: 'ton',          name: 'La primera tonelada',    desc: '1.000 kg de volumen acumulado',         target: 1000,   stat: 'totalVolumeKg' },
-  { id: 'tenTons',      name: 'Como un camión',         desc: '10.000 kg de volumen acumulado',        target: 10000,  stat: 'totalVolumeKg' },
-  { id: 'hundredTons',  name: 'Fuerza industrial',      desc: '100.000 kg de volumen acumulado',       target: 100000, stat: 'totalVolumeKg' },
-  { id: 'beastDay',     name: 'Día bestia',             desc: '10.000 kg de volumen en un solo día',   target: 10000,  stat: 'bestDayVolumeKg' },
-  { id: 'club100',      name: 'Club de los 100',        desc: 'Una serie con 100 kg o más',            target: 100,    stat: 'bestSetWeightKg' },
-  { id: 'explorer',     name: 'Explorador',             desc: '10 ejercicios distintos probados',      target: 10,     stat: 'distinctExercises' },
-  { id: 'encyclopedia', name: 'Enciclopedia',           desc: '25 ejercicios distintos probados',      target: 25,     stat: 'distinctExercises' },
-  { id: 'methodical',   name: 'Metódico',               desc: '5 registros con notas',                 target: 5,      stat: 'logsWithNotes' },
-  { id: 'setMarathon',  name: 'Maratón de series',      desc: '20 series completadas en un día',       target: 20,     stat: 'bestDaySets' },
-  { id: 'earlyBird',    name: 'Madrugador',             desc: 'Entrenar antes de las 8:00',            target: 1,      stat: 'earlyBird' },
-  { id: 'nightOwl',     name: 'Búho de gimnasio',       desc: 'Entrenar después de las 22:00',         target: 1,      stat: 'nightOwl' },
-  { id: 'weekend',      name: 'Guerrero del finde',     desc: 'Sábado y domingo de la misma semana',   target: 1,      stat: 'weekendWarrior' },
-  { id: 'cardio',       name: 'El cardio también cuenta', desc: 'Un ejercicio de tiempo o distancia',  target: 1,      stat: 'cardioLogs' },
-  { id: 'fullDay',      name: 'Pleno',                  desc: 'Un día con 5+ ejercicios, todos hechos', target: 1,     stat: 'fullDay' },
+  { id: 'workouts',  name: 'Curtido en hierro',        desc: 'Entrenamientos completados',              levels: [1, 10, 25, 50, 100, 250, 500],                stat: 'totalWorkouts' },
+  { id: 'days',      name: 'Presencia',                desc: 'Días distintos entrenados',               levels: [7, 30, 90, 180, 365],                         stat: 'distinctDays' },
+  { id: 'streak',    name: 'Racha imparable',          desc: 'Semanas seguidas entrenando',             levels: [2, 4, 8, 12, 26, 52],                         stat: 'weekStreak' },
+  { id: 'volume',    name: 'Toneladas de esfuerzo',    desc: 'Volumen total acumulado (kg)',            levels: [1000, 10000, 50000, 100000, 250000, 1000000], stat: 'totalVolumeKg' },
+  { id: 'bestSet',   name: 'Serie pesada',             desc: 'Tu serie con más peso (kg)',              levels: [40, 60, 80, 100, 120, 150, 200],              stat: 'bestSetWeightKg' },
+  { id: 'dayVolume', name: 'Día bestia',               desc: 'Máximo volumen en un solo día (kg)',      levels: [3000, 5000, 10000, 15000, 25000],             stat: 'bestDayVolumeKg' },
+  { id: 'exercises', name: 'Explorador',               desc: 'Ejercicios distintos probados',           levels: [5, 10, 25, 50, 100],                          stat: 'distinctExercises' },
+  { id: 'daySets',   name: 'Maratón de series',        desc: 'Series completadas en un solo día',       levels: [15, 20, 30, 40],                              stat: 'bestDaySets' },
+  { id: 'notes',     name: 'Metódico',                 desc: 'Registros con notas',                     levels: [5, 20, 50, 100],                              stat: 'logsWithNotes' },
+  { id: 'earlyBird', name: 'Madrugador',               desc: 'Días entrenando antes de las 8:00',       levels: [1, 10, 25, 50],                               stat: 'earlyBirdDays' },
+  { id: 'nightOwl',  name: 'Búho de gimnasio',         desc: 'Días entrenando después de las 22:00',    levels: [1, 10, 25, 50],                               stat: 'nightOwlDays' },
+  { id: 'weekend',   name: 'Guerrero del finde',       desc: 'Fines de semana completos (sáb y dom)',   levels: [1, 5, 15, 30],                                stat: 'fullWeekends' },
+  { id: 'cardio',    name: 'El cardio también cuenta', desc: 'Ejercicios de tiempo o distancia',        levels: [1, 10, 25, 50],                               stat: 'cardioLogs' },
+  { id: 'fullDay',   name: 'Pleno',                    desc: 'Días con 5+ ejercicios, todos hechos',    levels: [1, 5, 15, 30],                                stat: 'fullDays' },
 ];
 
 function achDayKey(iso) {
@@ -915,8 +908,9 @@ function achWeekKey(d) {
 function achAggregate(logs) {
   const done = logs.filter(l => l.completed);
   const days = new Set(), exercises = new Set(), weeks = new Set();
+  const earlyDays = new Set(), nightDays = new Set();
   const volumeByDay = new Map(), setsByDay = new Map(), logsByDay = new Map(), weekend = new Map();
-  let totalVolume = 0, bestSet = 0, notes = 0, early = 0, night = 0, cardio = 0;
+  let totalVolume = 0, bestSet = 0, notes = 0, cardio = 0;
 
   for (const log of done) {
     const day = achDayKey(log.logged_at);
@@ -925,8 +919,8 @@ function achAggregate(logs) {
     if (log.notes && log.notes.trim()) notes++;
     const d = new Date(log.logged_at);
     weeks.add(achWeekKey(d));
-    if (d.getHours() < 8) early = 1;
-    if (d.getHours() >= 22) night = 1;
+    if (d.getHours() < 8) earlyDays.add(day);
+    if (d.getHours() >= 22) nightDays.add(day);
     if (d.getDay() === 6 || d.getDay() === 0) {
       const wk = achWeekKey(d), w = weekend.get(wk) ?? { sat: false, sun: false };
       if (d.getDay() === 6) w.sat = true; else w.sun = true;
@@ -952,10 +946,10 @@ function achAggregate(logs) {
     rec.total++; if (log.completed) rec.completed++;
     logsByDay.set(day, rec);
   }
-  let fullDay = 0;
-  for (const rec of logsByDay.values()) if (rec.total >= 5 && rec.completed === rec.total) { fullDay = 1; break; }
-  let ww = 0;
-  for (const w of weekend.values()) if (w.sat && w.sun) { ww = 1; break; }
+  let fullDays = 0;
+  for (const rec of logsByDay.values()) if (rec.total >= 5 && rec.completed === rec.total) fullDays++;
+  let fullWeekends = 0;
+  for (const w of weekend.values()) if (w.sat && w.sun) fullWeekends++;
 
   // Racha de semanas: mejor tira de semanas consecutivas con entreno
   const sorted = [...weeks].sort();
@@ -974,7 +968,8 @@ function achAggregate(logs) {
     bestSetWeightKg: Math.round(bestSet * 10) / 10,
     distinctExercises: exercises.size, logsWithNotes: notes,
     bestDaySets: Math.max(0, ...setsByDay.values()),
-    earlyBird: early, nightOwl: night, weekendWarrior: ww, cardioLogs: cardio, fullDay,
+    earlyBirdDays: earlyDays.size, nightOwlDays: nightDays.size,
+    fullWeekends, cardioLogs: cardio, fullDays,
   };
 }
 
@@ -989,31 +984,43 @@ async function renderAchievements() {
   const stats = achAggregate(state.logs);
   const results = ACH_DEFS.map(d => {
     const current = stats[d.stat];
-    return { ...d, current, progress: Math.min(1, current / d.target), unlocked: current >= d.target };
+    let level = 0;
+    for (const target of d.levels) { if (current >= target) level++; else break; }
+    const nextTarget = level < d.levels.length ? d.levels[level] : null;
+    return {
+      ...d, current, level, maxLevel: d.levels.length, nextTarget,
+      progress: nextTarget == null ? 1 : Math.min(1, current / nextTarget),
+      unlocked: level >= 1,
+    };
   });
-  const unlocked = results.filter(r => r.unlocked).length;
+  const level = results.reduce((a, r) => a + r.level, 0);
+  const maxTotal = results.reduce((a, r) => a + r.maxLevel, 0);
 
   content.innerHTML = `
     <div class="head"><h1>Logros</h1></div>
     <div class="card ach-summary">
       <div class="ach-summary-icon">${SVG_CHECK}</div>
       <div style="flex:1">
-        <div class="ach-count">${unlocked} <span>/ ${results.length}</span></div>
-        <div class="ach-label">medallas desbloqueadas</div>
-        <div class="ach-bar"><div class="ach-fill" style="width:${Math.round((unlocked / results.length) * 100)}%"></div></div>
+        <div class="ach-count">Nivel ${level} <span>/ ${maxTotal}</span></div>
+        <div class="ach-label">nivel total de tu vitrina</div>
+        <div class="ach-bar"><div class="ach-fill" style="width:${Math.round((level / Math.max(1, maxTotal)) * 100)}%"></div></div>
       </div>
     </div>
     <div class="ach-grid">
-      ${results.map(a => `
+      ${results.map(a => {
+        const maxed = a.level >= a.maxLevel;
+        return `
         <div class="ach-medal ${a.unlocked ? 'on' : ''}">
+          ${a.unlocked ? `<div class="ach-level ${maxed ? 'gold' : ''}">${maxed ? 'MÁX' : 'Nivel ' + a.level}</div>` : ''}
           <div class="ach-icon">${a.unlocked ? SVG_CHECK : SVG_LOCK}</div>
           <div class="ach-name">${esc(a.name)}</div>
           <div class="ach-desc">${esc(a.desc)}</div>
-          ${a.unlocked
-            ? '<div class="ach-done">Conseguido</div>'
+          ${maxed
+            ? '<div class="ach-done">Completado</div>'
             : `<div class="ach-mini"><div class="ach-minifill" style="width:${Math.round(a.progress * 100)}%"></div></div>
-               <div class="ach-nums">${a.current.toLocaleString('es-ES')} / ${a.target.toLocaleString('es-ES')}</div>`}
-        </div>`).join('')}
+               <div class="ach-nums">${a.current.toLocaleString('es-ES')} / ${a.nextTarget.toLocaleString('es-ES')}</div>`}
+        </div>`;
+      }).join('')}
     </div>`;
 }
 
