@@ -889,8 +889,8 @@ const ACH_DEFS = [
   { id: 'exercises', name: 'Explorador',               desc: 'Ejercicios distintos probados',           levels: [5, 10, 25, 50, 100],                          stat: 'distinctExercises' },
   { id: 'daySets',   name: 'Maratón de series',        desc: 'Series completadas en un solo día',       levels: [15, 20, 30, 40],                              stat: 'bestDaySets' },
   { id: 'notes',     name: 'Metódico',                 desc: 'Registros con notas',                     levels: [5, 20, 50, 100],                              stat: 'logsWithNotes' },
-  { id: 'earlyBird', name: 'Madrugador',               desc: 'Días entrenando antes de las 8:00',       levels: [1, 10, 25, 50],                               stat: 'earlyBirdDays' },
-  { id: 'nightOwl',  name: 'Búho de gimnasio',         desc: 'Días entrenando después de las 22:00',    levels: [1, 10, 25, 50],                               stat: 'nightOwlDays' },
+  { id: 'earlyBird', name: 'Madrugador',               desc: 'Días entrenando temprano (5:00–9:00)',    levels: [1, 10, 25, 50],                               stat: 'earlyBirdDays' },
+  { id: 'nightOwl',  name: 'Búho de gimnasio',         desc: 'Días entrenando de noche (22:00–5:00)',   levels: [1, 10, 25, 50],                               stat: 'nightOwlDays' },
   { id: 'weekend',   name: 'Guerrero del finde',       desc: 'Fines de semana completos (sáb y dom)',   levels: [1, 5, 15, 30],                                stat: 'fullWeekends' },
   { id: 'cardio',    name: 'El cardio también cuenta', desc: 'Ejercicios de tiempo o distancia',        levels: [1, 10, 25, 50],                               stat: 'cardioLogs' },
   { id: 'fullDay',   name: 'Pleno',                    desc: 'Días con 5+ ejercicios, todos hechos',    levels: [1, 5, 15, 30],                                stat: 'fullDays' },
@@ -919,8 +919,9 @@ function achAggregate(logs) {
     if (log.notes && log.notes.trim()) notes++;
     const d = new Date(log.logged_at);
     weeks.add(achWeekKey(d));
-    if (d.getHours() < 8) earlyDays.add(day);
-    if (d.getHours() >= 22) nightDays.add(day);
+    const h = d.getHours();
+    if (h >= 5 && h < 9) earlyDays.add(day);
+    if (h >= 22 || h < 5) nightDays.add(day);
     if (d.getDay() === 6 || d.getDay() === 0) {
       const wk = achWeekKey(d), w = weekend.get(wk) ?? { sat: false, sun: false };
       if (d.getDay() === 6) w.sat = true; else w.sun = true;
